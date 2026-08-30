@@ -21,6 +21,8 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 - Role-based authorization helper
 - Structured logging contracts with sensitive-field redaction
 - Provider-agnostic audit event and sink contracts
+- Vendor-neutral repository abstraction example
+- Repository-backed application service example
 - Responsive enterprise-style starter UI
 - Node.js automated tests
 - GitHub Actions validation for typecheck, tests and production build
@@ -43,16 +45,24 @@ src/
 │   └── types.ts                     # provider-agnostic auth contracts
 ├── config/
 │   └── env.ts                       # typed environment validation
+├── domain/
+│   └── customer.ts                  # domain model and write inputs
 ├── lib/
 │   └── api/                          # API responses, errors and validation
-└── observability/
-    ├── audit.ts                      # audit event and sink contracts
-    └── logger.ts                     # structured logging and redaction
+├── observability/
+│   ├── audit.ts                     # audit event and sink contracts
+│   └── logger.ts                    # structured logging and redaction
+├── repositories/
+│   ├── customer-repository.ts       # persistence boundary
+│   └── in-memory-customer-repository.ts
+└── services/
+    └── customer-service.ts          # business logic using repository contract
 
 tests/
 ├── authorization.test.ts            # RBAC decision tests
 ├── env.test.ts                      # configuration validation tests
 ├── observability.test.ts            # logging and audit tests
+├── repository.test.ts               # repository/service behavior tests
 └── request-validation.test.ts       # API parsing tests
 ```
 
@@ -134,6 +144,12 @@ The example endpoint demonstrates controlled handling of malformed JSON, unsuppo
 
 `AuditEvent` and `AuditSink` define a separate audit trail contract for security- and business-relevant actions. The included in-memory sink exists for testing and examples; production applications should use durable storage with appropriate access controls and retention policies.
 
+## Repository and persistence abstraction
+
+`CustomerRepository` defines a persistence boundary independently of any ORM, SQL dialect, database service or cloud vendor. `CustomerService` depends only on that contract and contains application-level behavior such as normalization, uniqueness checks and active-customer filtering.
+
+The included `InMemoryCustomerRepository` exists for tests and examples. A production application can provide a Prisma, Drizzle, Supabase, PostgreSQL, DynamoDB or other adapter without moving persistence details into the service layer.
+
 ## Roadmap
 
 - [x] Next.js + TypeScript foundation
@@ -146,7 +162,7 @@ The example endpoint demonstrates controlled handling of malformed JSON, unsuppo
 - [x] Authentication abstraction
 - [x] Role-based authorization example
 - [x] Observability and audit logging foundation
-- [ ] Database/repository abstraction example
+- [x] Database/repository abstraction example
 - [ ] Rate limiting example
 - [ ] Container deployment example
 
