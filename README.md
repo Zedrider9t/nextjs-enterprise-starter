@@ -19,6 +19,8 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 - Request IDs for API traceability
 - Provider-agnostic authentication contracts
 - Role-based authorization helper
+- Structured logging contracts with sensitive-field redaction
+- Provider-agnostic audit event and sink contracts
 - Responsive enterprise-style starter UI
 - Node.js automated tests
 - GitHub Actions validation for typecheck, tests and production build
@@ -41,12 +43,16 @@ src/
 │   └── types.ts                     # provider-agnostic auth contracts
 ├── config/
 │   └── env.ts                       # typed environment validation
-└── lib/
-    └── api/                          # API responses, errors and validation
+├── lib/
+│   └── api/                          # API responses, errors and validation
+└── observability/
+    ├── audit.ts                      # audit event and sink contracts
+    └── logger.ts                     # structured logging and redaction
 
 tests/
 ├── authorization.test.ts            # RBAC decision tests
 ├── env.test.ts                      # configuration validation tests
+├── observability.test.ts            # logging and audit tests
 └── request-validation.test.ts       # API parsing tests
 ```
 
@@ -86,6 +92,8 @@ The starter disables the default `X-Powered-By` response header and applies base
 
 Authentication is intentionally provider-agnostic. The repository defines application-level principal and provider contracts instead of embedding credentials, tokens, or vendor-specific authentication logic. Authorization decisions are explicit and testable.
 
+Structured logging redacts common sensitive fields such as passwords, tokens, authorization headers, cookies, secrets and API keys before context is emitted. This is a defense-in-depth baseline; applications should still avoid placing unnecessary personal or secret data into logs.
+
 This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, rate limiting, secrets management, dependency review or infrastructure controls.
 
 ## Health endpoint
@@ -120,6 +128,12 @@ The example endpoint demonstrates controlled handling of malformed JSON, unsuppo
 
 `authorizeRoles()` demonstrates deterministic role checks against application-level roles: `viewer`, `member`, `manager`, and `admin`.
 
+## Observability and audit logging
+
+`createLogRecord()` creates structured records with timestamps, levels, request IDs and recursively redacted context. `ConsoleJsonLogger` is a minimal sink that can be replaced by an application-specific transport.
+
+`AuditEvent` and `AuditSink` define a separate audit trail contract for security- and business-relevant actions. The included in-memory sink exists for testing and examples; production applications should use durable storage with appropriate access controls and retention policies.
+
 ## Roadmap
 
 - [x] Next.js + TypeScript foundation
@@ -131,7 +145,7 @@ The example endpoint demonstrates controlled handling of malformed JSON, unsuppo
 - [x] Request validation examples
 - [x] Authentication abstraction
 - [x] Role-based authorization example
-- [ ] Observability and audit logging foundation
+- [x] Observability and audit logging foundation
 - [ ] Database/repository abstraction example
 - [ ] Rate limiting example
 - [ ] Container deployment example
