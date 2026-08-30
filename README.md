@@ -14,8 +14,13 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 - Runtime environment validation with Zod
 - Security response headers
 - Health API endpoint
+- Typed API response and error helpers
+- Request validation with Zod
+- Request IDs for API traceability
+- Provider-agnostic authentication contracts
+- Role-based authorization helper
 - Responsive enterprise-style starter UI
-- Node.js test coverage for environment validation
+- Node.js automated tests
 - GitHub Actions validation for typecheck, tests and production build
 - Safe `.env.example`
 - MIT license
@@ -25,15 +30,24 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 ```text
 src/
 ├── app/
-│   ├── api/health/route.ts   # service health endpoint
-│   ├── globals.css           # minimal enterprise UI styling
-│   ├── layout.tsx            # application shell and metadata
-│   └── page.tsx              # starter landing page
-└── config/
-    └── env.ts                # typed environment validation
+│   ├── api/
+│   │   ├── health/route.ts          # service health endpoint
+│   │   └── v1/contacts/route.ts     # validated API example
+│   ├── globals.css                  # minimal enterprise UI styling
+│   ├── layout.tsx                   # application shell and metadata
+│   └── page.tsx                     # starter landing page
+├── auth/
+│   ├── authorization.ts             # reusable role authorization logic
+│   └── types.ts                     # provider-agnostic auth contracts
+├── config/
+│   └── env.ts                       # typed environment validation
+└── lib/
+    └── api/                          # API responses, errors and validation
 
 tests/
-└── env.test.ts               # configuration validation tests
+├── authorization.test.ts            # RBAC decision tests
+├── env.test.ts                      # configuration validation tests
+└── request-validation.test.ts       # API parsing tests
 ```
 
 ## Quick start
@@ -70,7 +84,9 @@ Environment values are parsed centrally through `src/config/env.ts`. Invalid pro
 
 The starter disables the default `X-Powered-By` response header and applies baseline security headers including content-type sniffing protection, frame denial, a strict referrer policy, and restrictive browser permissions.
 
-This is a starting point, not a replacement for application-specific threat modeling, authentication, authorization, CSP design, rate limiting, secrets management, dependency review or infrastructure controls.
+Authentication is intentionally provider-agnostic. The repository defines application-level principal and provider contracts instead of embedding credentials, tokens, or vendor-specific authentication logic. Authorization decisions are explicit and testable.
+
+This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, rate limiting, secrets management, dependency review or infrastructure controls.
 
 ## Health endpoint
 
@@ -89,6 +105,21 @@ Example response:
 }
 ```
 
+## API validation example
+
+```http
+POST /api/v1/contacts
+Content-Type: application/json
+```
+
+The example endpoint demonstrates controlled handling of malformed JSON, unsupported content types, schema validation errors and unexpected failures without introducing a database or external service.
+
+## Authentication and authorization
+
+`AuthenticationProvider` defines the boundary where an application can integrate Auth.js, Clerk, Supabase Auth, an enterprise OIDC provider, or another identity system. The starter does not pretend that any of those providers is configured out of the box.
+
+`authorizeRoles()` demonstrates deterministic role checks against application-level roles: `viewer`, `member`, `manager`, and `admin`.
+
 ## Roadmap
 
 - [x] Next.js + TypeScript foundation
@@ -96,12 +127,13 @@ Example response:
 - [x] Security headers
 - [x] Health API
 - [x] Automated CI
-- [ ] Authentication abstraction
-- [ ] Role-based authorization example
-- [ ] Structured API response/error helpers
-- [ ] Request validation examples
+- [x] Structured API response/error helpers
+- [x] Request validation examples
+- [x] Authentication abstraction
+- [x] Role-based authorization example
 - [ ] Observability and audit logging foundation
 - [ ] Database/repository abstraction example
+- [ ] Rate limiting example
 - [ ] Container deployment example
 
 ## Maintainer
