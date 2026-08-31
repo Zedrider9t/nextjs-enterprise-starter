@@ -24,9 +24,12 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 - Vendor-neutral repository abstraction example
 - Repository-backed application service example
 - Vendor-neutral rate-limiting contract and fixed-window example
+- Multi-stage production Docker build
+- Non-root standalone Next.js container runtime
+- Container health check through `/api/health`
 - Responsive enterprise-style starter UI
 - Node.js automated tests
-- GitHub Actions validation for typecheck, tests and production build
+- GitHub Actions validation for typecheck, tests, production build and container build
 - Safe `.env.example`
 - MIT license
 
@@ -68,6 +71,10 @@ tests/
 ├── rate-limit.test.ts               # rate-limit behavior tests
 ├── repository.test.ts               # repository/service behavior tests
 └── request-validation.test.ts       # API parsing tests
+
+Dockerfile                            # production multi-stage image
+.dockerignore                         # constrained Docker build context
+docs/DEPLOYMENT.md                    # container deployment guidance
 ```
 
 ## Quick start
@@ -86,9 +93,10 @@ Open `http://localhost:3000`.
 npm run typecheck
 npm test
 npm run build
+docker build -t nextjs-enterprise-starter .
 ```
 
-The same validation runs in GitHub Actions for pull requests targeting `main`.
+The same application validation and container build run in GitHub Actions for pull requests targeting `main`.
 
 ## Environment configuration
 
@@ -110,7 +118,9 @@ Structured logging redacts common sensitive fields such as passwords, tokens, au
 
 The rate-limit example deliberately avoids trusting client-supplied IP headers. The contact endpoint demonstrates per-identifier limiting using the validated email address. Production systems should normally combine application-level limits with trusted edge/proxy controls and a shared rate-limit backend.
 
-This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, distributed rate limiting, secrets management, dependency review or infrastructure controls.
+The production container runs as a non-root user and uses Next.js standalone output to keep the runtime image smaller and independent of development tooling. Secrets are expected to be injected at runtime rather than copied into the image.
+
+This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, distributed rate limiting, secrets management, dependency review, container scanning or infrastructure controls.
 
 ## Health endpoint
 
@@ -164,6 +174,27 @@ The `/api/v1/contacts` example allows five accepted requests per validated email
 
 The in-memory store is not a distributed production limiter: separate processes, containers, regions or serverless instances will not share state. Production deployments should replace it with an appropriate shared backend or managed edge/gateway rate limiter and should derive network identity only from infrastructure they explicitly trust.
 
+## Container deployment
+
+Build the production image:
+
+```bash
+docker build -t nextjs-enterprise-starter .
+```
+
+Run it locally:
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e NEXT_PUBLIC_APP_NAME="Enterprise Starter" \
+  -e APP_ENV=production \
+  -e APP_URL="https://example.com" \
+  nextjs-enterprise-starter
+```
+
+The image uses a multi-stage Node.js 20 Alpine build, Next.js standalone output, a non-root runtime user and a health check against `/api/health`. See `docs/DEPLOYMENT.md` for production considerations and platform-neutral guidance.
+
 ## Roadmap
 
 - [x] Next.js + TypeScript foundation
@@ -178,7 +209,10 @@ The in-memory store is not a distributed production limiter: separate processes,
 - [x] Observability and audit logging foundation
 - [x] Database/repository abstraction example
 - [x] Rate limiting example
-- [ ] Container deployment example
+- [x] Container deployment example
+- [ ] Production authentication adapter example
+- [ ] Durable database adapter example
+- [ ] Distributed rate-limit adapter example
 
 ## Maintainer
 
