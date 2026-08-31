@@ -32,3 +32,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Build container image
+        run: docker build -t nextjs-enterprise-starter:ci .
