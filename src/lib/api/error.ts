@@ -1,6 +1,7 @@
 export type ApiErrorCode =
   | "BAD_REQUEST"
   | "VALIDATION_ERROR"
+  | "RATE_LIMITED"
   | "INTERNAL_ERROR";
 
 export interface ApiErrorPayload {

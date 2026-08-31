@@ -23,6 +23,7 @@ Most starter projects optimize for speed of scaffolding. This one is intended as
 - Provider-agnostic audit event and sink contracts
 - Vendor-neutral repository abstraction example
 - Repository-backed application service example
+- Vendor-neutral rate-limiting contract and fixed-window example
 - Responsive enterprise-style starter UI
 - Node.js automated tests
 - GitHub Actions validation for typecheck, tests and production build
@@ -36,7 +37,7 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── health/route.ts          # service health endpoint
-│   │   └── v1/contacts/route.ts     # validated API example
+│   │   └── v1/contacts/route.ts     # validated, rate-limited API example
 │   ├── globals.css                  # minimal enterprise UI styling
 │   ├── layout.tsx                   # application shell and metadata
 │   └── page.tsx                     # starter landing page
@@ -55,6 +56,8 @@ src/
 ├── repositories/
 │   ├── customer-repository.ts       # persistence boundary
 │   └── in-memory-customer-repository.ts
+├── security/
+│   └── rate-limit.ts                # rate-limit contract and demo store
 └── services/
     └── customer-service.ts          # business logic using repository contract
 
@@ -62,6 +65,7 @@ tests/
 ├── authorization.test.ts            # RBAC decision tests
 ├── env.test.ts                      # configuration validation tests
 ├── observability.test.ts            # logging and audit tests
+├── rate-limit.test.ts               # rate-limit behavior tests
 ├── repository.test.ts               # repository/service behavior tests
 └── request-validation.test.ts       # API parsing tests
 ```
@@ -104,7 +108,9 @@ Authentication is intentionally provider-agnostic. The repository defines applic
 
 Structured logging redacts common sensitive fields such as passwords, tokens, authorization headers, cookies, secrets and API keys before context is emitted. This is a defense-in-depth baseline; applications should still avoid placing unnecessary personal or secret data into logs.
 
-This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, rate limiting, secrets management, dependency review or infrastructure controls.
+The rate-limit example deliberately avoids trusting client-supplied IP headers. The contact endpoint demonstrates per-identifier limiting using the validated email address. Production systems should normally combine application-level limits with trusted edge/proxy controls and a shared rate-limit backend.
+
+This is a starting point, not a replacement for application-specific threat modeling, identity-provider configuration, authorization policy review, CSP design, distributed rate limiting, secrets management, dependency review or infrastructure controls.
 
 ## Health endpoint
 
@@ -130,7 +136,7 @@ POST /api/v1/contacts
 Content-Type: application/json
 ```
 
-The example endpoint demonstrates controlled handling of malformed JSON, unsupported content types, schema validation errors and unexpected failures without introducing a database or external service.
+The example endpoint demonstrates controlled handling of malformed JSON, unsupported content types, schema validation errors, per-email request limiting and unexpected failures without introducing a database or external service.
 
 ## Authentication and authorization
 
@@ -150,6 +156,14 @@ The example endpoint demonstrates controlled handling of malformed JSON, unsuppo
 
 The included `InMemoryCustomerRepository` exists for tests and examples. A production application can provide a Prisma, Drizzle, Supabase, PostgreSQL, DynamoDB or other adapter without moving persistence details into the service layer.
 
+## Rate limiting and abuse protection
+
+`RateLimitStore` defines the application boundary for rate limiting. `InMemoryFixedWindowRateLimitStore` provides a deterministic fixed-window implementation for local development, tests and examples, while `createRateLimitKey()` normalizes namespaced identifiers.
+
+The `/api/v1/contacts` example allows five accepted requests per validated email address per minute and returns a typed `RATE_LIMITED` API error when that limit is exceeded.
+
+The in-memory store is not a distributed production limiter: separate processes, containers, regions or serverless instances will not share state. Production deployments should replace it with an appropriate shared backend or managed edge/gateway rate limiter and should derive network identity only from infrastructure they explicitly trust.
+
 ## Roadmap
 
 - [x] Next.js + TypeScript foundation
@@ -163,7 +177,7 @@ The included `InMemoryCustomerRepository` exists for tests and examples. A produ
 - [x] Role-based authorization example
 - [x] Observability and audit logging foundation
 - [x] Database/repository abstraction example
-- [ ] Rate limiting example
+- [x] Rate limiting example
 - [ ] Container deployment example
 
 ## Maintainer
